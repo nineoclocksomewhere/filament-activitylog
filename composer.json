@@ -1,12 +1,12 @@
 {
-    "name": "rmsramos/activitylog",
+    "name": "nocs/filament-activitylog",
     "description": "This is my package activitylog",
     "keywords": [
         "Rmsramos",
         "laravel",
         "activitylog"
     ],
-    "homepage": "https://github.com/rmsramos/activitylog",
+    "homepage": "https://github.com/nineoclocksomewhere/filament-activitylog",
     "license": "MIT",
     "authors": [
         {
@@ -81,5 +81,11 @@
         }
     },
     "minimum-stability": "dev",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "repositories": {
+        "nocs": {
+            "type": "composer",
+            "url": "https://packages.nineoclocksomewhe.re"
+        }
+    }
 }

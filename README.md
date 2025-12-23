@@ -18,7 +18,7 @@ This package provides a Filament resource that shows you all of the activity log
 ## Requirements
 
 -   Laravel v12
--   Filament v3
+-   Filament v4
 -   Spatie/Laravel-activitylog v4
 
 ## Languages Supported
@@ -42,7 +42,7 @@ ActivityLog Plugin is translated for :
 You can install the package via composer:
 
 ```bash
-composer require rmsramos/activitylog
+composer require nocs/filament-activitylog
 ```
 
 After that run the install command:
