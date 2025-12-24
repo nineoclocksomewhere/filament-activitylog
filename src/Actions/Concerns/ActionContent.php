@@ -7,6 +7,7 @@ use Closure;
 use Filament\Actions\StaticAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -151,32 +152,57 @@ trait ActionContent
             ->icon('heroicon-o-bell-alert');
     }
 
-    protected function getSchema(): array
+    public function getSchema(Schema $schema): ?Schema
     {
-        return [
+        return $schema->schema([
             TimeLineRepeatableEntry::make('activities')
                 ->schema([
                     TimeLineIconEntry::make('activityData.event')
-                        ->icon(function ($state) {
-                            return $this->getTimelineIcons()[$state] ?? 'heroicon-m-check';
-                        })
-                        ->color(function ($state) {
-                            return $this->getTimelineIconColors()[$state] ?? 'primary';
-                        }),
+                        ->icon(fn (?string $state): string =>
+                            $this->getTimelineIcons()[$state] ?? 'heroicon-m-check'
+                        )
+                        ->color(fn (?string $state): string =>
+                            $this->getTimelineIconColors()[$state] ?? 'primary'
+                        ),
+
                     TimeLineTitleEntry::make('activityData')
-                        ->configureTitleUsing($this->modifyTitleUsing)
-                        ->shouldConfigureTitleUsing($this->shouldModifyTitleUsing),
-                    TimeLinePropertiesEntry::make('activityData'),
+                        ->state(fn ($record) => is_array($record?->activityData)
+                            ? $record->activityData
+                            : []
+                        )
+                        ->configureTitleUsing(function (?array $state): string {
+                            if (! is_array($state)) {
+                                return '';
+                            }
+
+                            return $state['description']
+                                ?? $state['event']
+                                ?? '';
+                        })
+                        ->shouldConfigureTitleUsing(
+                            fn () => (bool) $this->shouldModifyTitleUsing
+                        ),
+
+                    TimeLinePropertiesEntry::make('activityData')
+                        ->state(fn ($record) => [
+                            'event' => $record?->activityData['event'] ?? null,
+                            'description' => $record?->activityData['description'] ?? null,
+                            'properties' => $record?->activityData['properties'] ?? [],
+                            'created_at' => $record?->activityData['created_at'] ?? null,
+                        ]),
+
                     TextEntry::make('log_name')
                         ->hiddenLabel()
                         ->badge(),
+
                     TextEntry::make('updated_at')
                         ->hiddenLabel()
                         ->since()
                         ->badge(),
                 ]),
-        ];
+        ]);
     }
+
 
     public function withRelations(?array $relations = null): ?StaticAction
     {

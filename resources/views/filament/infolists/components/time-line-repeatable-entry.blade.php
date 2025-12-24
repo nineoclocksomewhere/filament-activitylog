@@ -4,46 +4,37 @@
 
 <x-dynamic-component :component="$getEntryWrapperView()" :entry="$entry">
     <div
-        {{
-            $attributes
-                ->merge([
+        {{ $attributes->merge(
+                [
                     'id' => $getId(),
-                ], escape: false)
-                ->merge($getExtraAttributes(), escape: false)
-                ->class([
-                    'fi-in-repeatable',
-                    'fi-contained' => $isContained,
-                ])
-        }}
-    >
+                ],
+                escape: false,
+            )->merge($getExtraAttributes(), escape: false)->class(['fi-in-repeatable', 'fi-contained' => $isContained]) }}>
         @if (count($childComponentContainers = $getChildComponentContainers()))
             <ol class="relative border-gray-200 border-s dark:border-gray-700">
-                <x-filament::grid
-                    :default="$getGridColumns('default')"
-                    :sm="$getGridColumns('sm')"
-                    :md="$getGridColumns('md')"
-                    :lg="$getGridColumns('lg')"
-                    :xl="$getGridColumns('xl')"
-                    :two-xl="$getGridColumns('2xl')"
-                    class="gap-2"
-                >
+                <div
+                    class="grid gap-2
+                        grid-cols-{{ $getGridColumns('default') }}
+                        sm:grid-cols-{{ $getGridColumns('sm') }}
+                        md:grid-cols-{{ $getGridColumns('md') }}
+                        lg:grid-cols-{{ $getGridColumns('lg') }}
+                        xl:grid-cols-{{ $getGridColumns('xl') }}
+                        2xl:grid-cols-{{ $getGridColumns('2xl') }}">
                     @foreach ($childComponentContainers as $container)
-                        <li
-                            @class([
-                                'mb-4 ms-6',
-                                'fi-in-repeatable-item block',
-                                'rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-white/5 dark:ring-white/10' => $isContained,
-                            ])
-                        >
+                        <li @class([
+                            'mb-4 ms-6',
+                            'fi-in-repeatable-item block',
+                            'rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-white/5 dark:ring-white/10' => $isContained,
+                        ])>
                             {{ $container }}
                         </li>
                     @endforeach
-                </x-filament::grid>
+                </div>
             </ol>
         @elseif (($placeholder = $getPlaceholder()) !== null)
-            <x-filament-infolists::entries.placeholder>
+            <div class="text-sm text-gray-500 dark:text-gray-400 italic">
                 {{ $placeholder }}
-            </x-filament-infolists::entries.placeholder>
+            </div>
         @endif
     </div>
 </x-dynamic-component>
