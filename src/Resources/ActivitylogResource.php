@@ -2,7 +2,6 @@
 
 namespace Rmsramos\Activitylog\Resources;
 
-use ActivitylogForm;
 use Exception;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\DatePicker;
@@ -28,8 +27,9 @@ use Rmsramos\Activitylog\Actions\Concerns\ActionContent;
 use Rmsramos\Activitylog\ActivitylogPlugin;
 use Rmsramos\Activitylog\Helpers\ActivityLogHelper;
 use Rmsramos\Activitylog\RelationManagers\ActivitylogRelationManager;
-use Rmsramos\Activitylog\Resources\ActivitylogResource\Pages\ListActivitylog;
-use Rmsramos\Activitylog\Resources\ActivitylogResource\Pages\ViewActivitylog;
+use Rmsramos\Activitylog\Resources\Pages\ListActivitylog;
+use Rmsramos\Activitylog\Resources\Pages\ViewActivitylog;
+use Rmsramos\Activitylog\Resources\Schemas\ActivitylogForm;
 use Rmsramos\Activitylog\Traits\HasCustomActivityResource;
 use Spatie\Activitylog\Models\Activity;
 
