@@ -4,6 +4,7 @@ namespace Rmsramos\Activitylog\Resources\Schemas;
 
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -51,6 +52,14 @@ class ActivitylogForm
                             return $record?->event ? ucwords(__('activitylog::action.event.'.$record->event)) : '-';
                         })
                         ->label(__('activitylog::forms.fields.event.label')),
+
+                    ViewField::make('properties')
+                        ->formatStateUsing(function ($state, ?Model $record) {
+                            /** @var Activity|null $record */
+                            return $record?->properties?->toArray() ?? [];
+                        })
+                        ->view('activitylog::filament.tables.columns.activity-logs-properties')
+                        ->label(__('activitylog::forms.fields.properties.label')),
 
                     TextEntry::make('created_at')
                         ->label(__('activitylog::forms.fields.created_at.label'))
