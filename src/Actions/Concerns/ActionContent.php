@@ -220,7 +220,7 @@ trait ActionContent
                         ->badge(),
 
                     TextEntry::make('separator')
-                        ->state('<hr class="border-gray-200 dark:border-gray-700 my-4">')
+                        ->state('<hr style="border: 1px solid #e5e7eb; margin: 0.5rem 0 2rem 0; border-top-width: 1px; border-bottom-width: 0;">')
                         ->hiddenLabel()
                         ->html(),
                 ]),
