@@ -227,7 +227,18 @@ class ActivitylogResource extends Resource
                     return new HtmlString('&mdash;');
                 }
 
-                return $record->causer->name ?? new HtmlString('&mdash;');
+                $causer = $record->causer;
+                $name = [];
+
+                if (isset($causer->firstname)) {
+                    $name[] = $causer->firstname;
+                }
+
+                if (isset($causer->name)) {
+                    $name[] = $causer->name;
+                }
+
+                return !empty($name) ? implode(' ', $name) : new HtmlString('&mdash;');
             })
             ->searchable();
     }

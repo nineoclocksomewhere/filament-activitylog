@@ -21,7 +21,22 @@ class ActivitylogForm
                 Section::make([
                     TextInput::make('causer_id')
                         ->afterStateHydrated(function ($component, ?Model $record) {
-                            return $component->state($record?->causer?->name ?? '-');
+                            if (!$record?->causer) {
+                                return $component->state('-');
+                            }
+
+                            $causer = $record->causer;
+                            $name = [];
+
+                            if (isset($causer->firstname)) {
+                                $name[] = $causer->firstname;
+                            }
+
+                            if (isset($causer->name)) {
+                                $name[] = $causer->name;
+                            }
+
+                            return $component->state(!empty($name) ? implode(' ', $name) : '-');
                         })
                         ->label(__('activitylog::forms.fields.causer.label')),
 

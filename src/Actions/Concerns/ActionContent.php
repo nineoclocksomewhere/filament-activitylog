@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Rmsramos\Activitylog\ActivitylogPlugin;
 use Rmsramos\Activitylog\Infolists\Components\TimeLineIconEntry;
 use Rmsramos\Activitylog\Infolists\Components\TimeLinePropertiesEntry;
@@ -123,22 +124,14 @@ trait ActionContent
                 });
         };
     }
+
     protected function configureInfolist(): void
     {
         $this->infolist(function (?Model $record, Infolist $infolist) {
-            $activities = $this->getActivityLogRecord($record, $this->getWithRelations());
-
-            $formattedActivities = $activities->map(function ($activity) {
-                return [
-                    'id'           => $activity->id,
-                    'log_name'     => $activity->log_name,
-                    'updated_at'   => $activity->updated_at,
-                    'activityData' => $activity->activityData,
-                ];
-            })->toArray();
+            $activities = $this->getActivities($record, $this->getWithRelations());
 
             return $infolist
-                ->state(['activities' => $formattedActivities])
+                ->state(['activities' => $activities])
                 ->schema($this->getSchema());
         });
     }
@@ -157,70 +150,86 @@ trait ActionContent
         return $schema->schema([
             TimeLineRepeatableEntry::make('activities')
                 ->schema([
-                    TimeLineIconEntry::make('activityData.event')
-                        ->icon(fn (?string $state): string =>
-                            $this->getTimelineIcons()[$state] ?? 'heroicon-m-check'
-                        )
-                        ->color(fn (?string $state): string =>
-                            $this->getTimelineIconColors()[$state] ?? 'primary'
-                        ),
-
-                    TimeLineTitleEntry::make('activityData')
-                        ->state(fn ($record) => is_array($record?->activityData)
-                            ? $record->activityData
-                            : []
-                        )
-                        ->configureTitleUsing(function (?array $state): string {
-                            if (! is_array($state)) {
-                                return '';
+                    TextEntry::make('causer.name')
+                        ->state(function ($record) {
+                            if (!$record->causer) {
+                                return '-';
                             }
 
-                            return $state['description']
-                                ?? $state['event']
-                                ?? '';
-                        })
-                        ->shouldConfigureTitleUsing(
-                            fn () => (bool) $this->shouldModifyTitleUsing
-                        ),
+                            $causer = $record->causer;
+                            $name = [];
 
-                    TimeLinePropertiesEntry::make('activityData')
-                        ->state(fn ($record) => [
-                            'event' => $record?->activityData['event'] ?? null,
-                            'description' => $record?->activityData['description'] ?? null,
-                            'properties' => $record?->activityData['properties'] ?? [],
-                            'created_at' => $record?->activityData['created_at'] ?? null,
-                        ]),
+                            if (isset($causer->firstname)) {
+                                $name[] = $causer->firstname;
+                            }
+
+                            if (isset($causer->name)) {
+                                $name[] = $causer->name;
+                            }
+                            clLog()->log(implode(' ', $name));
+                            return !empty($name) ? implode(' ', $name) : '-';
+                        })
+                        ->label(__('activitylog::forms.fields.causer.label')),
+
+                    TextEntry::make('subject_type')
+                        ->state(function ($record) {
+                            if (!$record->subject_type) {
+                                return '-';
+                            }
+
+                            $modelName = Str::of($record->subject_type)->afterLast('\\')->headline();
+                            return $modelName . ' # ' . $record->subject_id;
+                        })
+                        ->label(__('activitylog::forms.fields.subject_type.label')),
+
+                    TextEntry::make('event')
+                        ->state(function (?Model $record): string {
+                            /** @var Activity $record */
+                            return $record?->event ? ucwords(__('activitylog::action.event.'.$record->event)) : '-';
+                        })
+                        ->label(__('activitylog::forms.fields.event.label')),
+
+                    TextEntry::make('description')
+                        ->state(fn ($record) => $record->description ?? null)
+                        ->label(__('activitylog::forms.fields.description.label')),
+
+                    TextEntry::make('properties')
+                        ->state(function ($record) {
+                            if (!$record->properties) {
+                                return null;
+                            }
+
+                            $properties = is_string($record->properties)
+                                ? json_decode($record->properties, true)
+                                : $record->properties;
+
+                            return $properties ?? null;
+                        })
+                        ->view('activitylog::filament.tables.columns.activity-logs-properties')
+                        ->label(__('activitylog::forms.fields.properties.label')),
 
                     TextEntry::make('log_name')
+                        ->state(fn ($record) => $record->log_name ?? null)
                         ->hiddenLabel()
                         ->badge(),
 
                     TextEntry::make('updated_at')
+                        ->state(fn ($record) => $record->updated_at ?? null)
                         ->hiddenLabel()
                         ->since()
                         ->badge(),
+
+                    TextEntry::make('separator')
+                        ->state('<hr class="border-gray-200 dark:border-gray-700 my-4">')
+                        ->hiddenLabel()
+                        ->html(),
                 ]),
         ]);
     }
 
-
     public function withRelations(?array $relations = null): ?StaticAction
     {
         $this->withRelations = $relations;
-
-        return $this;
-    }
-
-    public function timelineIcons(?array $timelineIcons = null): ?StaticAction
-    {
-        $this->timelineIcons = $timelineIcons;
-
-        return $this;
-    }
-
-    public function timelineIconColors(?array $timelineIconColors = null): ?StaticAction
-    {
-        $this->timelineIconColors = $timelineIconColors;
 
         return $this;
     }
@@ -287,9 +296,9 @@ trait ActionContent
         return $this->evaluate($this->limit);
     }
 
-    public function getQuery(): ?Builder
+    public function getQuery(?Model $record = null): ?Builder
     {
-        return $this->evaluate($this->query);
+        return $this->evaluate($this->query, ['record' => $record]);
     }
 
     public function getModifyQueryUsing(Builder $builder): Builder
@@ -312,22 +321,11 @@ trait ActionContent
             return collect();
         }
 
-        $builder = $this->getQuery()
+        $builder = $this->getQuery($record)
             ->latest()
             ->limit($this->getLimit());
 
         return $this->getModifyQueryUsing($builder)->get();
-    }
-
-    protected function getActivityLogRecord(?Model $record, ?array $relations = null): Collection
-    {
-        $activities = $this->getActivities($record, $relations);
-
-        return $activities->transform(function ($activity) {
-            $activity->activityData = $this->formatActivityData($activity);
-
-            return $activity;
-        });
     }
 
     protected function formatActivityData($activity): array
@@ -358,10 +356,10 @@ trait ActionContent
             'causer'      => $activity->causer,
             'properties'  => $this->formatDateValues($properties),
             'batch_uuid'  => $activity->batch_uuid,
-            'update'      => $activity->updated_at,
+            'created_at'  => $activity->created_at,
+            'updated_at'  => $activity->updated_at,
         ];
     }
-
 
     protected static function formatDateValues(array|string|null $value): array|string|null
     {
